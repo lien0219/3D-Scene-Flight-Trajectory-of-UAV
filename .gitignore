@@ -1,0 +1,39 @@
+# Dependencies
+web/node_modules/
+
+# Build output
+web/dist/
+
+# Vite
+web/.vite/
+
+# Go
+api/drone-api
+api/drone-api.exe
+api/*.exe
+api/*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# TypeScript cache
+web/*.tsbuildinfo
