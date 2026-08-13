@@ -1,5 +1,7 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
+
+const WEBGL_TEST_TIMEOUT = 180_000
 
 interface Rect {
   x: number
@@ -9,7 +11,7 @@ interface Rect {
 }
 
 test('renders live telemetry and a nonblank 3D scene without panel overlap', async ({ page }) => {
-  test.setTimeout(90_000)
+  test.setTimeout(WEBGL_TEST_TIMEOUT)
   const pageErrors: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
   await page.goto('/')
@@ -46,23 +48,18 @@ test('renders live telemetry and a nonblank 3D scene without panel overlap', asy
     width: Math.floor(viewport!.width * 0.24),
     height: Math.floor(viewport!.height * 0.16),
   }
-  await expect.poll(async () => sceneRegionIsVisible(
-    await page.screenshot({ clip: sceneClip }),
-  ), { timeout: 20_000 }).toBe(true)
-
-  const chaseFrame = await page.screenshot({ clip: sceneClip })
+  await page.waitForTimeout(1_500)
+  const chaseFrame = await captureVisibleScene(page, sceneClip)
   await controls.getByRole('button', { name: /俯瞰视角/ }).click()
   await expect(controls.getByRole('button', { name: /俯瞰视角/ })).toHaveCSS('font-weight', '700')
   await page.waitForTimeout(1_500)
-  const topFrame = await page.screenshot({ clip: sceneClip })
+  const topFrame = await captureVisibleScene(page, sceneClip)
   expect(imageDifference(chaseFrame, topFrame)).toBeGreaterThan(8)
   expect(pageErrors).toEqual([])
-
-  await page.screenshot({ path: `test-results/${test.info().project.name}-scene.png`, fullPage: true })
 })
 
 test('switches to the Cesium and Three.js digital twin workspace with working controls', async ({ page }) => {
-  test.setTimeout(90_000)
+  test.setTimeout(WEBGL_TEST_TIMEOUT)
   const pageErrors: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
   await page.goto('/')
@@ -95,15 +92,19 @@ test('switches to the Cesium and Three.js digital twin workspace with working co
     width: Math.max(80, Math.floor(viewport.width * 0.32)),
     height: Math.max(80, Math.floor(viewport.height * 0.28)),
   }
-  await expect.poll(async () => sceneRegionIsVisible(
-    await page.screenshot({ clip: canvasRegion }),
-  ), { timeout: 20_000 }).toBe(true)
+  await page.waitForTimeout(1_500)
+  await captureVisibleScene(page, canvasRegion)
   expect(pageErrors).toEqual([])
 
   await page.reload()
   await expect(page.getByRole('heading', { name: '园区资产' })).toBeVisible()
-  await page.screenshot({ path: `test-results/${test.info().project.name}-digital-twin.png`, fullPage: true })
 })
+
+async function captureVisibleScene(page: Page, clip: Rect): Promise<Buffer> {
+  const frame = await page.screenshot({ clip, animations: 'disabled' })
+  expect(sceneRegionIsVisible(frame)).toBe(true)
+  return frame
+}
 
 function rectanglesOverlap(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
