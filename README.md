@@ -1,11 +1,15 @@
-# TwinSpace
+<h1 align="center">TwinSpace</h1>
 
-[![CI](https://github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/actions/workflows/ci.yml/badge.svg)](https://github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8?logo=go)](api/go.mod)
-[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](web/package.json)
-[![CesiumJS](https://img.shields.io/badge/CesiumJS-1.124-6CADDF?logo=cesium)](web/package.json)
-[![Three.js](https://img.shields.io/badge/Three.js-r185-black?logo=threedotjs)](web/package.json)
+<p align="center"><strong>CesiumJS + Three.js 多项目三维空间与数字孪生平台</strong></p>
+
+<p align="center">
+  <a href="https://github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-green.svg"></a>
+  <a href="api/go.mod"><img alt="Go 1.22+" src="https://img.shields.io/badge/Go-1.22%2B-00ADD8?logo=go"></a>
+  <a href="web/package.json"><img alt="React 18" src="https://img.shields.io/badge/React-18-61DAFB?logo=react"></a>
+  <a href="web/package.json"><img alt="CesiumJS 1.124" src="https://img.shields.io/badge/CesiumJS-1.124-6CADDF?logo=cesium"></a>
+  <a href="web/package.json"><img alt="Three.js r185" src="https://img.shields.io/badge/Three.js-r185-black?logo=threedotjs"></a>
+</p>
 
 TwinSpace 是一个面向三维地理可视化与数字孪生场景的开源多项目平台。项目将 CesiumJS 的全球地理空间能力与 Three.js 的本地三维建模能力组合在同一画布坐标体系中，并提供可运行的无人机飞行轨迹与低空园区数字孪生示例。
 
@@ -39,6 +43,39 @@ TwinSpace 是一个面向三维地理可视化与数字孪生场景的开源多�
 - 两个引擎同步相机位置、方向、视场角和画布尺寸，实现空间贴合。
 - 资产目录、状态高亮、设备指标、图层开关和资产聚焦。
 - 鸟瞰、正射和能源站视角，以及可暂停的巡检仿真时间轴。
+
+## 无人机平滑算法
+
+后端默认以 5 Hz 推送无人机位置与姿态，而浏览器通常以 60 FPS 渲染。如果直接把每条遥测写入模型，画面会每 200 ms 跳动一次。TwinSpace 在每个渲染帧使用与帧率无关的指数平滑，将低频网络目标连续转换为 Cesium 模型状态。
+
+```mermaid
+flowchart LR
+  API[Go 模拟器 5 Hz] --> WS[WebSocket 遥测]
+  WS --> Target[更新目标状态]
+  Target --> RAF[requestAnimationFrame]
+  RAF --> Smooth[指数平滑位置与姿态]
+  Smooth --> Cesium[Cesium 模型与跟随相机]
+  RAF --> RAF
+```
+
+每帧的平滑系数与状态更新公式为：
+
+```text
+alpha = 1 - exp(-k * deltaTime)
+current = current + (target - current) * alpha
+```
+
+其中 `deltaTime` 是当前帧间隔（秒），无人机状态的响应系数 `k = 8`。指数形式使相同时间内的收敛结果基本不受 30 FPS、60 FPS 或 120 FPS 差异影响。经度、纬度、高度、俯仰角和横滚角使用该公式；航向角先计算 `[-180°, 180°]` 内的最短角差，避免从 `350°` 到 `10°` 时反向旋转 `340°`。
+
+| 目标改变后的时间 | 已完成变化 | 剩余误差 |
+| --- | ---: | ---: |
+| 50 ms | 33.0% | 67.0% |
+| 100 ms | 55.1% | 44.9% |
+| 200 ms | 79.8% | 20.2% |
+| 300 ms | 90.9% | 9.1% |
+| 500 ms | 98.2% | 1.8% |
+
+相机跟随采用相同原理，但使用较柔和的 `k = 5`，从而降低追尾和俯瞰视角中的视觉抖动。首次收到某架无人机数据时会直接初始化当前状态，避免模型从无效坐标缓慢飞入。完整推导、伪代码、角度环绕和参数选择见 [无人机平滑算法说明](docs/UAV_SMOOTHING.md)。
 
 ## 技术架构
 
@@ -199,6 +236,7 @@ pnpm test:e2e
 - [架构说明](docs/ARCHITECTURE.md)：运行时数据流、模块边界与双引擎同步
 - [配置指南](docs/CONFIGURATION.md)：环境变量、任务格式与部署方式
 - [API 文档](docs/API.md)：REST 与 WebSocket 契约
+- [无人机平滑算法](docs/UAV_SMOOTHING.md)：逐帧指数平滑、角度插值与参数原理
 - [扩展指南](docs/EXTENDING.md)：新增工作区、资产类型、数据源和模型
 - [路线图](ROADMAP.md)：近期计划与范围边界
 - [变更记录](CHANGELOG.md)：版本演进与未发布内容

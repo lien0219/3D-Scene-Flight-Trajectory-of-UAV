@@ -71,6 +71,8 @@ flowchart TB
 6. `parseDronePayload` 校验消息，`DroneInterpolator` 将 5 Hz 目标状态平滑到浏览器帧率。
 7. `CesiumViewer` 使用 `CallbackProperty` 更新模型位置和姿态，并按选中无人机更新相机。
 
+逐帧指数平滑、航向角最短路径和相机响应参数见 [无人机平滑算法](UAV_SMOOTHING.md)。
+
 ## 数字孪生双引擎
 
 ### 引擎职责
