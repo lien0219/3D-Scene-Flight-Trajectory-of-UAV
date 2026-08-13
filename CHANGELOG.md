@@ -6,6 +6,11 @@
 
 ### Added
 
+- TwinSpace 多项目平台外壳、项目导航和 URL 深链。
+- CesiumJS 与 Three.js 相机/ENU 坐标同步的园区数字孪生工作区。
+- 建筑、能源站、通信基站、环境设备、资产状态、图层控制和巡检仿真。
+- Three.js、Lucide 图标及对应 TypeScript 类型依赖。
+- 项目路由单元测试，以及双画布、资产交互和相机变化端到端回归。
 - 外部 JSON 任务文件、环境变量配置和任务校验。
 - `/healthz`、`/api/config` 端点及 HTTP/WebSocket Origin 白名单。
 - Go 配置、模拟器、路由测试和前端遥测负载测试。
@@ -15,6 +20,10 @@
 
 ### Changed
 
+- 项目从单一无人机轨迹页面升级为可扩展的多工作区三维空间平台。
+- WebSocket Origin 校验支持 Vite 自动选择的本机回环端口，同时保持外部域名精确匹配。
+- 开发代理显式使用 `127.0.0.1`，避免 `localhost` 解析到无关 IPv6 服务。
+- 两个 Cesium Viewer 均禁用默认 Ion 底图，避免无效 Token 请求。
 - 前端航线和颜色改为由 API 任务配置驱动。
 - 移动端 HUD 与场景控制改为上下分区响应式布局。
 - 前端默认使用同源 API 和 WebSocket，并支持分离部署变量。

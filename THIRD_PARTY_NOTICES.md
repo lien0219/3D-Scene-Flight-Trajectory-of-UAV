@@ -8,7 +8,11 @@ This document records assets and services that are not covered by the repository
 
 ## Screenshot assets
 
-Files under `web/src/img/default/` are screenshots of this project. They may include map imagery rendered from the service described below and must not be treated as independently licensed map data.
+Files under `web/src/img/default/` and `docs/images/` are screenshots of this project. They may include map imagery rendered from the service described below and must not be treated as independently licensed map data.
+
+## Digital twin geometry
+
+The campus buildings, energy facility, communication tower, environmental sensor, and inspection drone rendered by `web/src/components/twin/ThreeTwinLayer.tsx` are generated from Three.js primitive geometry specifically for this repository and are covered by the repository MIT license.
 
 ## Map imagery
 
@@ -16,4 +20,4 @@ The default scene requests satellite tiles from AutoNavi (Gaode) at runtime. The
 
 ## Software dependencies
 
-Go and npm dependencies remain under their respective licenses. Their versions are recorded in `api/go.sum` and `web/pnpm-lock.yaml`.
+Go and npm dependencies, including CesiumJS, Resium, Three.js, React, Lucide, Gorilla WebSocket, and rs/cors, remain under their respective licenses. Their exact versions are recorded in `api/go.sum` and `web/pnpm-lock.yaml`.

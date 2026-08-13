@@ -1,6 +1,6 @@
 # 贡献指南
 
-感谢参与 UAV Flight Trajectory。为保持项目可维护，请先通过 Issue 对较大功能、协议变更和新依赖进行讨论。小型修复可以直接提交 Pull Request。
+感谢参与 TwinSpace。为保持项目可维护，请先通过 Issue 对新工作区、较大功能、协议变更和新依赖进行讨论。小型修复可以直接提交 Pull Request。
 
 参与项目即表示你同意遵守 [行为准则](CODE_OF_CONDUCT.md)。安全漏洞不要提交公开 Issue，请按 [安全策略](SECURITY.md) 报告。
 
@@ -14,13 +14,14 @@ cd 3D-Scene-Flight-Trajectory-of-UAV/web
 pnpm install --frozen-lockfile
 ```
 
-分别在 `api` 目录运行 `go run .`，在 `web` 目录运行 `pnpm dev`。应用地址为 <http://localhost:5173>。
+分别在 `api` 目录运行 `go run .`，在 `web` 目录运行 `pnpm dev`。默认应用地址为 <http://127.0.0.1:5173>；数字孪生深链为 <http://127.0.0.1:5173/?project=digital-twin>。
 
 ## 工作原则
 
 - 一个 Pull Request 解决一个清晰问题。
 - 保持 API、任务格式和默认行为向后兼容；不兼容变更必须先讨论。
 - 配置与业务逻辑分离，航线数据通过任务文件扩展。
+- 新三维项目应作为独立工作区接入平台，并支持稳定 URL 深链。
 - 外部输入应在边界处校验，失败时给出可操作错误。
 - 修复缺陷时增加能在修复前失败、修复后通过的测试。
 - 不提交 token、凭据、私有坐标、构建产物或本地环境文件。
@@ -41,6 +42,8 @@ pnpm install --frozen-lockfile
 - 数据转换优先放入 `src/lib` 的纯函数并测试。
 - Hook 必须清理连接、计时器、监听器和动画循环。
 - Cesium 对象创建应稳定，避免在渲染期间无意义重复分配。
+- Three.js geometry、material、texture、动画帧和观察器必须在卸载时释放。
+- 双引擎场景必须说明坐标参考系、原点、轴向和单位。
 
 ### Markdown
 
@@ -68,7 +71,7 @@ pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-UI 或 Cesium 改动还应在浏览器中验证桌面与窄屏布局、WebSocket 重连、模型加载和控制面板交互。
+UI、Cesium 或 Three.js 改动还应在浏览器中验证桌面与窄屏布局、WebSocket 重连、非空画布、模型加载、项目切换、相机变化和控制面板交互。
 
 ## Commit 与 Pull Request
 
