@@ -1,0 +1,22 @@
+services:
+  api:
+    build:
+      context: ./api
+    environment:
+      HTTP_ADDR: ":8080"
+      TICK_INTERVAL: 200ms
+      ALLOWED_ORIGINS: http://localhost:8088,http://127.0.0.1:8088
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build:
+      context: ./web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8088:80"

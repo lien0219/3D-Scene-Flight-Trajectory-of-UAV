@@ -16,7 +16,7 @@ type DroneState struct {
 }
 
 type Waypoint struct {
-	Lng float64
-	Lat float64
-	Alt float64
+	Lng float64 `json:"lng"`
+	Lat float64 `json:"lat"`
+	Alt float64 `json:"alt"`
 }

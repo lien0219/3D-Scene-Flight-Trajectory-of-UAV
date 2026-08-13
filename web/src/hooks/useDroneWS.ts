@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import type { DroneState, DroneFleet } from '../types/drone'
-
-const WS_URL = `ws://${window.location.hostname}:8080/ws`
+import { useEffect, useRef, useState } from 'react'
+import { webSocketUrl } from '../config/runtime'
+import { parseDronePayload } from '../lib/dronePayload'
+import type { DroneFleet } from '../types/drone'
 
 export function useDroneWS() {
   const [fleet, setFleet] = useState<DroneFleet>({})
@@ -18,7 +18,7 @@ export function useDroneWS() {
       if (!isMounted.current) return
       if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-      const ws = new WebSocket(WS_URL)
+      const ws = new WebSocket(webSocketUrl())
       wsRef.current = ws
 
       ws.onopen = () => {
@@ -32,17 +32,7 @@ export function useDroneWS() {
 
       ws.onmessage = (evt) => {
         try {
-          const raw = JSON.parse(evt.data)
-
-          // 兼容单无人机和多无人机格式
-          const arr: DroneState[] = Array.isArray(raw) ? raw : [raw]
-
-          const newFleet: DroneFleet = {}
-          const ids: string[] = []
-          for (const s of arr) {
-            newFleet[s.droneId] = s
-            ids.push(s.droneId)
-          }
+          const { fleet: newFleet, ids } = parseDronePayload(evt.data)
           setFleet(newFleet)
 
           setDroneIds((prev) => {

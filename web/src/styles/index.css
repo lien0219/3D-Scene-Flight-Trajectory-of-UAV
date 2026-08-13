@@ -13,6 +13,79 @@ body,
   background: #000;
 }
 
-.cesium-viewer-bottom {
+/* Keep Cesium branding while removing the on-screen attribution copy. */
+.cesium-credit-textContainer,
+.cesium-credit-expand-link {
   display: none !important;
+}
+
+.hud-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 999;
+  min-width: 280px;
+  max-width: calc(100vw - 208px);
+}
+
+.scene-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 160px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  .hud-panel {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    min-width: 0;
+    max-width: none;
+    max-height: calc(52vh - 12px);
+    overflow-y: auto;
+    padding: 12px 14px !important;
+    font-size: 12px !important;
+  }
+
+  .scene-controls {
+    top: auto;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    min-width: 0;
+    max-height: calc(48vh - 12px);
+    padding: 8px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.76);
+    border: 1px solid #555;
+    border-radius: 6px;
+    backdrop-filter: blur(8px);
+  }
+
+  .scene-controls__mode {
+    grid-column: 1 / -1;
+  }
+
+  .scene-controls__separator,
+  .scene-controls__label,
+  .scene-controls__drone {
+    display: none !important;
+  }
+
+  .scene-controls__action {
+    min-width: 0;
+    padding: 8px 4px !important;
+    font-size: 11px !important;
+    overflow-wrap: anywhere;
+  }
 }

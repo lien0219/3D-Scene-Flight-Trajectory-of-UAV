@@ -1,23 +1,24 @@
 package config
 
-import "drone-api/model"
+import "github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/api/model"
 
-const (
-	ServerPort   = ":8080"
-	TickInterval = 200 // 毫秒
-	InitBattery  = 100.0
-)
+const InitBattery = 100.0
 
-// 多无人机配置
+type Mission struct {
+	Name   string        `json:"name"`
+	Drones []DroneConfig `json:"drones"`
+}
+
 type DroneConfig struct {
-	ID    string
-	Speed float64
-	Alt   float64
-	Route []model.Waypoint
+	ID    string           `json:"id"`
+	Name  string           `json:"name"`
+	Color string           `json:"color"`
+	Speed float64          `json:"speed"`
+	Route []model.Waypoint `json:"route"`
 }
 
 // 深圳核心航线（UAV-001）
-var Route1 = []model.Waypoint{
+var route1 = []model.Waypoint{
 	{Lng: 113.9301, Lat: 22.5334, Alt: 150},
 	{Lng: 113.9425, Lat: 22.5155, Alt: 160},
 	{Lng: 113.9710, Lat: 22.5092, Alt: 140},
@@ -34,7 +35,7 @@ var Route1 = []model.Waypoint{
 }
 
 // 南山-蛇口沿海航线（UAV-002）
-var Route2 = []model.Waypoint{
+var route2 = []model.Waypoint{
 	{Lng: 113.9350, Lat: 22.5300, Alt: 120},
 	{Lng: 113.9200, Lat: 22.5100, Alt: 130},
 	{Lng: 113.9050, Lat: 22.4900, Alt: 140},
@@ -48,7 +49,7 @@ var Route2 = []model.Waypoint{
 }
 
 // 龙华-福田北线（UAV-003）
-var Route3 = []model.Waypoint{
+var route3 = []model.Waypoint{
 	{Lng: 114.0290, Lat: 22.6090, Alt: 180},
 	{Lng: 114.0400, Lat: 22.5900, Alt: 175},
 	{Lng: 114.0550, Lat: 22.5750, Alt: 170},
@@ -61,9 +62,15 @@ var Route3 = []model.Waypoint{
 	{Lng: 114.0290, Lat: 22.6090, Alt: 180},
 }
 
-// 所有无人机
-var DroneFleet = []DroneConfig{
-	{ID: "uav-001", Speed: 15.0, Alt: 150, Route: Route1},
-	{ID: "uav-002", Speed: 12.0, Alt: 120, Route: Route2},
-	{ID: "uav-003", Speed: 18.0, Alt: 180, Route: Route3},
+var defaultMission = Mission{
+	Name: "深圳无人机巡航演示",
+	Drones: []DroneConfig{
+		{ID: "uav-001", Name: "核心航线", Color: "#00ffff", Speed: 15.0, Route: route1},
+		{ID: "uav-002", Name: "沿海航线", Color: "#ff6b35", Speed: 12.0, Route: route2},
+		{ID: "uav-003", Name: "北部航线", Color: "#a855f7", Speed: 18.0, Route: route3},
+	},
+}
+
+func DefaultMission() Mission {
+	return cloneMission(defaultMission)
 }

@@ -1,0 +1,102 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "UAV Flight Trajectory project"
+  },
+  "scene": 0,
+  "extensionsUsed": ["KHR_materials_unlit"],
+  "scenes": [
+    { "nodes": [0] }
+  ],
+  "nodes": [
+    {
+      "name": "UAV",
+      "children": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    },
+    { "name": "Body", "mesh": 0, "scale": [1.25, 0.32, 0.72] },
+    { "name": "Forward marker", "mesh": 2, "translation": [1.25, 0.04, 0], "scale": [0.48, 0.22, 0.38] },
+    { "name": "Front left arm", "mesh": 0, "translation": [0.92, 0, 0.92], "rotation": [0, -0.3826834, 0, 0.9238795], "scale": [1.55, 0.12, 0.14] },
+    { "name": "Front right arm", "mesh": 0, "translation": [0.92, 0, -0.92], "rotation": [0, 0.3826834, 0, 0.9238795], "scale": [1.55, 0.12, 0.14] },
+    { "name": "Rear left arm", "mesh": 0, "translation": [-0.92, 0, 0.92], "rotation": [0, 0.3826834, 0, 0.9238795], "scale": [1.55, 0.12, 0.14] },
+    { "name": "Rear right arm", "mesh": 0, "translation": [-0.92, 0, -0.92], "rotation": [0, -0.3826834, 0, 0.9238795], "scale": [1.55, 0.12, 0.14] },
+    { "name": "Front left rotor", "mesh": 1, "translation": [1.88, 0.08, 1.88], "scale": [0.72, 0.06, 0.72] },
+    { "name": "Front right rotor", "mesh": 1, "translation": [1.88, 0.08, -1.88], "scale": [0.72, 0.06, 0.72] },
+    { "name": "Rear left rotor", "mesh": 1, "translation": [-1.88, 0.08, 1.88], "scale": [0.72, 0.06, 0.72] },
+    { "name": "Rear right rotor", "mesh": 1, "translation": [-1.88, 0.08, -1.88], "scale": [0.72, 0.06, 0.72] },
+    { "name": "Front left hub", "mesh": 2, "translation": [1.88, 0.16, 1.88], "scale": [0.22, 0.18, 0.22] },
+    { "name": "Front right hub", "mesh": 2, "translation": [1.88, 0.16, -1.88], "scale": [0.22, 0.18, 0.22] },
+    { "name": "Tail", "mesh": 2, "translation": [-1.22, 0.18, 0], "scale": [0.34, 0.38, 0.45] }
+  ],
+  "meshes": [
+    {
+      "name": "Airframe",
+      "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }]
+    },
+    {
+      "name": "Rotors",
+      "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 1 }]
+    },
+    {
+      "name": "Navigation accents",
+      "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 2 }]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Airframe",
+      "extensions": { "KHR_materials_unlit": {} },
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0.78, 0.84, 0.88, 1],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.7
+      },
+      "doubleSided": true
+    },
+    {
+      "name": "Rotors",
+      "extensions": { "KHR_materials_unlit": {} },
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0.04, 0.07, 0.09, 1],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.8
+      },
+      "doubleSided": true
+    },
+    {
+      "name": "Navigation accents",
+      "extensions": { "KHR_materials_unlit": {} },
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0, 0.82, 1, 1],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.5
+      },
+      "doubleSided": true
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 168,
+      "uri": "data:application/octet-stream;base64,AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAD8AAAC/AAAAvwAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAPwAAAD8AAAA/AAAAvwAAAD8AAAA/AAACAAEAAAADAAIABAAFAAYABAAGAAcAAAABAAUAAAAFAAQAAQACAAYAAQAGAAUAAgADAAcAAgAHAAYAAwAAAAQAAwAEAAcA"
+    }
+  ],
+  "bufferViews": [
+    { "buffer": 0, "byteOffset": 0, "byteLength": 96, "target": 34962 },
+    { "buffer": 0, "byteOffset": 96, "byteLength": 72, "target": 34963 }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 8,
+      "type": "VEC3",
+      "min": [-0.5, -0.5, -0.5],
+      "max": [0.5, 0.5, 0.5]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5123,
+      "count": 36,
+      "type": "SCALAR"
+    }
+  ]
+}

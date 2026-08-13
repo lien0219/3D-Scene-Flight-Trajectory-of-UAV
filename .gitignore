@@ -3,6 +3,7 @@ web/node_modules/
 
 # Build output
 web/dist/
+!web/src/assets/*.gltf
 
 # Vite
 web/.vite/
@@ -12,6 +13,7 @@ api/drone-api
 api/drone-api.exe
 api/*.exe
 api/*.out
+api/.gocache/
 
 # IDE
 .idea/
@@ -37,3 +39,9 @@ pnpm-debug.log*
 
 # TypeScript cache
 web/*.tsbuildinfo
+
+# Test coverage
+coverage/
+*.coverprofile
+web/test-results/
+web/playwright-report/

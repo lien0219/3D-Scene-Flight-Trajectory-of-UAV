@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import CesiumScene from './components/CesiumViewer'
 import HUD from './components/HUD'
 import { useDroneWS } from './hooks/useDroneWS'
+import { useMission } from './hooks/useMission'
 
 export default function App() {
   const { fleet, droneIds, connected } = useDroneWS()
+  const { mission, error: missionError } = useMission()
   const [selectedId, setSelectedId] = useState<string>('')
 
   // 自动选中第一架无人机
@@ -23,6 +25,7 @@ export default function App() {
         droneIds={droneIds}
         selectedId={selectedId}
         onSelectDrone={setSelectedId}
+        mission={mission}
       />
       <HUD
         droneState={selectedDrone}
@@ -30,6 +33,8 @@ export default function App() {
         droneIds={droneIds}
         selectedId={selectedId}
         onSelectDrone={setSelectedId}
+        missionName={mission?.name}
+        missionError={missionError}
       />
     </>
   )

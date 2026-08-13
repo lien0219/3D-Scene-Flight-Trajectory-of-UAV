@@ -6,23 +6,29 @@ interface Props {
   droneIds: string[]
   selectedId: string
   onSelectDrone: (id: string) => void
+  missionName?: string
+  missionError?: string | null
 }
 
-export default function HUD({ droneState, connected, droneIds, selectedId, onSelectDrone }: Props) {
+export default function HUD({
+  droneState,
+  connected,
+  droneIds,
+  selectedId,
+  onSelectDrone,
+  missionName,
+  missionError,
+}: Props) {
   return (
     <div
+      className="hud-panel"
       style={{
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        zIndex: 999,
         background: 'rgba(0,0,0,0.80)',
         color: '#0f0',
         padding: '16px 20px',
         borderRadius: 8,
         fontFamily: '"Consolas", "Courier New", monospace',
         fontSize: 14,
-        minWidth: 280,
         backdropFilter: 'blur(8px)',
         border: '1px solid rgba(0,255,0,0.3)',
         boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
@@ -38,8 +44,12 @@ export default function HUD({ droneState, connected, droneIds, selectedId, onSel
           color: '#0ff',
         }}
       >
-        无人机巡航系统 — 深圳
+        {missionName ?? '无人机巡航系统'}
       </div>
+
+      {missionError && (
+        <div style={{ color: '#ff6b6b', marginBottom: 8 }}>任务配置加载失败: {missionError}</div>
+      )}
 
       <div style={{ marginBottom: 8 }}>
         连接状态：{connected ? '🟢 已连接' : '🔴 断开'}

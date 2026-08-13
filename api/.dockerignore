@@ -1,0 +1,4 @@
+.env
+.gocache
+*.coverprofile
+drone-api*

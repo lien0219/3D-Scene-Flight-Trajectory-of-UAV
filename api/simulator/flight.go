@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"drone-api/config"
-	"drone-api/model"
+	"github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/api/config"
+	"github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/api/model"
 )
 
 type FlightSimulator struct {
@@ -21,7 +21,7 @@ type FlightSimulator struct {
 	tickInterval time.Duration
 }
 
-func NewFlightSimulator(cfg config.DroneConfig) *FlightSimulator {
+func NewFlightSimulator(cfg config.DroneConfig, tickInterval time.Duration) *FlightSimulator {
 	fs := &FlightSimulator{
 		droneID:      cfg.ID,
 		route:        cfg.Route,
@@ -29,7 +29,7 @@ func NewFlightSimulator(cfg config.DroneConfig) *FlightSimulator {
 		progress:     0,
 		battery:      config.InitBattery,
 		speed:        cfg.Speed,
-		tickInterval: time.Duration(config.TickInterval) * time.Millisecond,
+		tickInterval: tickInterval,
 	}
 	wp := fs.route[0]
 	fs.state = model.DroneState{
@@ -39,6 +39,7 @@ func NewFlightSimulator(cfg config.DroneConfig) *FlightSimulator {
 		Alt:     wp.Alt,
 		Speed:   0,
 		Battery: fs.battery,
+		Status:  "flying",
 	}
 	return fs
 }
@@ -47,28 +48,30 @@ func (fs *FlightSimulator) Tick() model.DroneState {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	if fs.currentIdx >= len(fs.route)-1 {
-		fs.currentIdx = 0
-		fs.progress = 0
-	}
+	remainingDistance := fs.speed * fs.tickInterval.Seconds()
+	var from, to model.Waypoint
+	var segDist float64
 
-	from := fs.route[fs.currentIdx]
-	to := fs.route[fs.currentIdx+1]
-
-	segDist := haversine(from.Lat, from.Lng, to.Lat, to.Lng)
-
-	dt := fs.tickInterval.Seconds()
-	stepRatio := (fs.speed * dt) / segDist
-	fs.progress += stepRatio
-
-	if fs.progress >= 1.0 {
-		fs.progress = 0
-		fs.currentIdx++
-		if fs.currentIdx >= len(fs.route)-1 {
+	for {
+		if fs.currentIdx >= len(fs.route) {
 			fs.currentIdx = 0
+			fs.progress = 0
 		}
+
 		from = fs.route[fs.currentIdx]
-		to = fs.route[fs.currentIdx+1]
+		to = fs.route[(fs.currentIdx+1)%len(fs.route)]
+		segDist = haversine(from.Lat, from.Lng, to.Lat, to.Lng)
+		remainingOnSegment := segDist * (1 - fs.progress)
+		if segDist > 0 && remainingDistance < remainingOnSegment {
+			fs.progress += remainingDistance / segDist
+			break
+		}
+
+		if segDist > 0 {
+			remainingDistance -= remainingOnSegment
+		}
+		fs.currentIdx++
+		fs.progress = 0
 	}
 
 	lng := lerp(from.Lng, to.Lng, fs.progress)
@@ -81,7 +84,7 @@ func (fs *FlightSimulator) Tick() model.DroneState {
 	pitch := math.Atan2(altDiff, segDist) * 180 / math.Pi
 	roll := math.Sin(float64(time.Now().UnixMilli())/1000.0) * 2.0
 
-	fs.battery -= 0.001
+	fs.battery -= 0.005 * fs.tickInterval.Seconds()
 	if fs.battery < 0 {
 		fs.battery = 100.0
 	}
@@ -94,16 +97,18 @@ func (fs *FlightSimulator) Tick() model.DroneState {
 	}
 
 	fs.state = model.DroneState{
-		DroneID:   fs.droneID,
-		Lng:       lng,
-		Lat:       lat,
-		Alt:       alt,
-		Heading:   heading,
-		Pitch:     pitch,
-		Roll:      roll,
-		Speed:     math.Round(speed*100) / 100,
-		Battery:   math.Round(fs.battery*10) / 10,
-		Timestamp: time.Now().Unix(),
+		DroneID:       fs.droneID,
+		Lng:           lng,
+		Lat:           lat,
+		Alt:           alt,
+		Heading:       heading,
+		Pitch:         pitch,
+		Roll:          roll,
+		Speed:         math.Round(speed*100) / 100,
+		Battery:       math.Round(fs.battery*10) / 10,
+		Timestamp:     time.Now().Unix(),
+		Status:        "flying",
+		WaypointIndex: fs.currentIdx,
 	}
 	return fs.state
 }
@@ -114,7 +119,7 @@ func (fs *FlightSimulator) GetState() model.DroneState {
 	return fs.state
 }
 
-// --- 地理计算工具 ---
+// Geographic calculation helpers.
 func haversine(lat1, lng1, lat2, lng2 float64) float64 {
 	const R = 6371000
 	dLat := (lat2 - lat1) * math.Pi / 180

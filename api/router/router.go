@@ -3,22 +3,26 @@ package router
 import (
 	"net/http"
 
-	"drone-api/handler"
+	"github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/api/handler"
 
 	"github.com/rs/cors"
 )
 
-func Setup(hub *handler.Hub) http.Handler {
+func Setup(hub *handler.Hub, allowedOrigins []string) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/ws", hub.HandleWS)
-	mux.HandleFunc("/api/state", hub.HandleState)
+	mux.HandleFunc("GET /ws", hub.HandleWS)
+	mux.HandleFunc("GET /api/state", hub.HandleState)
+	mux.HandleFunc("GET /api/config", hub.HandleConfig)
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
+		AllowedOrigins: allowedOrigins,
+		AllowedMethods: []string{http.MethodGet, http.MethodOptions},
+		AllowedHeaders: []string{"Content-Type"},
 	})
 
 	return c.Handler(mux)

@@ -14,3 +14,22 @@ export interface DroneState {
 }
 
 export type DroneFleet = Record<string, DroneState>
+
+export interface Waypoint {
+  lng: number
+  lat: number
+  alt: number
+}
+
+export interface DroneConfig {
+  id: string
+  name: string
+  color: string
+  speed: number
+  route: Waypoint[]
+}
+
+export interface Mission {
+  name: string
+  drones: DroneConfig[]
+}

@@ -6,7 +6,6 @@ import {
   HeadingPitchRoll,
   Math as CesiumMath,
   Transforms,
-  Ion,
   ConstantProperty,
   NearFarScalar,
   Cartesian2,
@@ -16,18 +15,26 @@ import {
   UrlTemplateImageryProvider,
   SceneMode,
   CallbackProperty,
+  Credit,
+  CreditDisplay,
+  buildModuleUrl,
 } from 'cesium'
-import type { DroneState, DroneFleet } from '../types/drone'
+import type { DroneState, DroneFleet, Mission } from '../types/drone'
+import { DroneInterpolator, lerpAngleRad } from '../lib/DroneInterpolator'
 
-import droneModelUrl from '../img/10487538/glbfile.glb?url'
+import droneModelUrl from '../assets/uav.gltf?url'
 
-Ion.defaultAccessToken =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmM2FjZTFhMi04MDA3LTQ0ZDMtYjU5MC0zZDY3MzFjYjhiZTIiLCJpZCI6MTAyMDc0LCJpYXQiOjE2NTg0NTQwMTN9.IVHYp3zuOzV1e-CIic6-n95rvh2kjddmEnVQm54wFy4'
+const cesiumLogoUrl = buildModuleUrl('Assets/Images/cesium_credit.png')
+CreditDisplay.cesiumCredit = new Credit(
+  `<a href="https://cesium.com/" target="_blank" rel="noopener noreferrer"><img src="${cesiumLogoUrl}" alt="Cesium" title="Cesium" /></a>`,
+  true,
+)
 
 const gaodeSatellite = new UrlTemplateImageryProvider({
   url: 'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
   subdomains: ['1', '2', '3', '4'],
   maximumLevel: 18,
+  credit: '地图影像 © 高德地图',
 })
 const flatTerrain = new EllipsoidTerrainProvider()
 
@@ -92,63 +99,6 @@ const landmarkEntities = LANDMARKS.map((lm) => ({
   },
 }))
 
-// ======= 多航线数据（与后端一致） =======
-interface RouteConfig {
-  id: string
-  name: string
-  points: [number, number, number][]
-  names: string[]
-  color: Color
-}
-
-const ROUTES: RouteConfig[] = [
-  {
-    id: 'uav-001',
-    name: 'UAV-001 核心航线',
-    points: [
-      [113.9301, 22.5334, 150], [113.9425, 22.5155, 160], [113.971, 22.5092, 140],
-      [114.004, 22.5173, 155], [114.034, 22.526, 150], [114.0579, 22.5431, 170],
-      [114.085, 22.551, 145], [114.113, 22.548, 160], [114.1315, 22.5481, 150],
-      [114.113, 22.548, 155], [114.0579, 22.5431, 160], [113.971, 22.5092, 150],
-      [113.9301, 22.5334, 150],
-    ],
-    names: ['南山科技园', '深圳湾公园', '深圳湾大桥', '华侨城', '市民中心', '莲花山', '笋岗', '罗湖口岸', '罗湖', '返航1', '返航2', '返航3', '起点'],
-    color: Color.CYAN,
-  },
-  {
-    id: 'uav-002',
-    name: 'UAV-002 沿海航线',
-    points: [
-      [113.935, 22.530, 120], [113.920, 22.510, 130], [113.905, 22.490, 140],
-      [113.890, 22.480, 135], [113.910, 22.470, 125], [113.935, 22.485, 130],
-      [113.955, 22.500, 120], [113.970, 22.510, 135], [113.955, 22.520, 125],
-      [113.935, 22.530, 120],
-    ],
-    names: ['南山起点', '南山南', '蛇口西', '蛇口港', '蛇口南', '蛇口东', '湾厦', '深圳湾', '南山回', '返回起点'],
-    color: Color.fromCssColorString('#FF6B35'),
-  },
-  {
-    id: 'uav-003',
-    name: 'UAV-003 北线',
-    points: [
-      [114.029, 22.609, 180], [114.040, 22.590, 175], [114.055, 22.575, 170],
-      [114.070, 22.560, 165], [114.085, 22.570, 175], [114.100, 22.585, 180],
-      [114.080, 22.600, 185], [114.060, 22.610, 180], [114.040, 22.615, 175],
-      [114.029, 22.609, 180],
-    ],
-    names: ['深圳北站', '民治', '上梅林', '笔架山', '翠竹', '布心', '水库', '银湖', '龙华回', '返回起点'],
-    color: Color.fromCssColorString('#A855F7'),
-  },
-]
-
-// 预计算航线 Cesium 数据
-const routeData = ROUTES.map((r) => ({
-  ...r,
-  positions: Cartesian3.fromDegreesArrayHeights(r.points.flatMap(([lng, lat, alt]) => [lng, lat, alt])),
-  waypointPositions: r.points.map(([lng, lat, alt]) => Cartesian3.fromDegrees(lng, lat, alt)),
-  material: r.color.withAlpha(0.7),
-}))
-
 // 航点样式
 const WP_POINT = {
   pixelSize: new ConstantProperty(6),
@@ -168,24 +118,12 @@ const WP_LABEL_BASE = {
   disableDepthTestDistance: new ConstantProperty(Number.POSITIVE_INFINITY),
 }
 
-const routeWpLabels = ROUTES.map((r) =>
-  r.points.map((_, i) => ({
-    text: new ConstantProperty(`${r.id.toUpperCase().replace('UAV-', '#')}WP${i + 1}`),
-    ...WP_LABEL_BASE,
-  }))
-)
-
 // ======= 无人机模型配置 =======
 const DRONE_MODEL_URI = new ConstantProperty(droneModelUrl)
-const DRONE_SCALE = new ConstantProperty(2.0)
-const DRONE_MIN_PX = new ConstantProperty(48)
-const DRONE_MAX_SCALE = new ConstantProperty(500)
+const DRONE_SCALE = new ConstantProperty(1.5)
+const DRONE_MIN_PX = new ConstantProperty(88)
+const DRONE_MAX_SCALE = new ConstantProperty(80)
 
-const DRONE_COLORS: Record<string, Color> = {
-  'uav-001': Color.CYAN,
-  'uav-002': Color.fromCssColorString('#FF6B35'),
-  'uav-003': Color.fromCssColorString('#A855F7'),
-}
 const DRONE_DEFAULT_COLOR = Color.LIME
 
 const DRONE_LABEL_BASE = {
@@ -206,20 +144,7 @@ interface Props {
   droneIds: string[]
   selectedId: string
   onSelectDrone: (id: string) => void
-}
-
-// 角度
-function lerpAngleDeg(a: number, b: number, t: number) {
-  let diff = b - a
-  while (diff > 180) diff -= 360
-  while (diff < -180) diff += 360
-  return a + diff * t
-}
-function lerpAngleRad(a: number, b: number, t: number) {
-  let diff = b - a
-  while (diff > Math.PI) diff -= 2 * Math.PI
-  while (diff < -Math.PI) diff += 2 * Math.PI
-  return a + diff * t
+  mission: Mission | null
 }
 
 // 天气
@@ -235,61 +160,18 @@ const WEATHER_OVERLAY: Record<WeatherMode, React.CSSProperties> = {
   },
 }
 
-// ======= 插值状态 =======
-interface InterpState {
-  lng: number; lat: number; alt: number
-  heading: number; pitch: number; roll: number
-}
-
-// 管理多架无人机的插值状态
-class DroneInterpolator {
-  targets = new Map<string, InterpState>()
-  currents = new Map<string, InterpState>()
-
-  setTarget(id: string, s: DroneState) {
-    this.targets.set(id, {
-      lng: s.lng, lat: s.lat, alt: s.alt,
-      heading: s.heading, pitch: s.pitch, roll: s.roll,
-    })
-    if (!this.currents.has(id)) {
-      this.currents.set(id, {
-        lng: s.lng, lat: s.lat, alt: s.alt,
-        heading: s.heading, pitch: s.pitch, roll: s.roll,
-      })
-    }
-  }
-
-  tick(dt: number) {
-    const speed = 8
-    const t = 1 - Math.exp(-speed * dt)
-
-    for (const [id, tgt] of this.targets) {
-      const cur = this.currents.get(id)
-      if (!cur) continue
-      cur.lng += (tgt.lng - cur.lng) * t
-      cur.lat += (tgt.lat - cur.lat) * t
-      cur.alt += (tgt.alt - cur.alt) * t
-      cur.heading = lerpAngleDeg(cur.heading, tgt.heading, t)
-      cur.pitch += (tgt.pitch - cur.pitch) * t
-      cur.roll += (tgt.roll - cur.roll) * t
-    }
-  }
-
-  get(id: string): InterpState | undefined {
-    return this.currents.get(id)
-  }
-}
-
 function DroneEntity({
   droneId,
   interpolator,
   isSelected,
   onSelect,
+  color,
 }: {
   droneId: string
   interpolator: DroneInterpolator
   isSelected: boolean
   onSelect: () => void
+  color: Color
 }) {
   const positionProp = useMemo(
     () => new CallbackProperty(() => {
@@ -320,7 +202,7 @@ function DroneEntity({
     [droneId, interpolator]
   )
 
-  const droneColor = DRONE_COLORS[droneId] ?? DRONE_DEFAULT_COLOR
+  const droneColor = color
 
   const model = useMemo(() => ({
     uri: DRONE_MODEL_URI,
@@ -328,10 +210,8 @@ function DroneEntity({
     minimumPixelSize: DRONE_MIN_PX,
     maximumScale: DRONE_MAX_SCALE,
     silhouetteColor: new ConstantProperty(isSelected ? Color.WHITE : droneColor),
-    silhouetteSize: new ConstantProperty(isSelected ? 2.5 : 1.0),
-    color: new ConstantProperty(
-      isSelected ? Color.WHITE : Color.WHITE.withAlpha(0.85)
-    ),
+    silhouetteSize: new ConstantProperty(isSelected ? 3 : 1.5),
+    color: new ConstantProperty(Color.WHITE),
   }), [droneId, isSelected, droneColor])
 
   const label = useMemo(() => ({
@@ -351,7 +231,7 @@ function DroneEntity({
   )
 }
 
-export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone }: Props) {
+export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone, mission }: Props) {
   const viewerRef = useRef<CesiumViewer | null>(null)
   const [followMode, setFollowMode] = useState<FollowMode>('chase')
   const [weather, setWeather] = useState<WeatherMode>('clear')
@@ -364,6 +244,27 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
   const followModeRef = useRef<FollowMode>('chase')
   const sceneModeRef = useRef<SceneModeType>('3d')
   const selectedIdRef = useRef(selectedId)
+
+  const routeData = useMemo(() => (mission?.drones ?? []).map((drone) => {
+    const color = Color.fromCssColorString(drone.color) ?? DRONE_DEFAULT_COLOR
+    return {
+      ...drone,
+      color,
+      positions: Cartesian3.fromDegreesArrayHeights(
+        [...drone.route, drone.route[0]].flatMap(({ lng, lat, alt }) => [lng, lat, alt]),
+      ),
+      waypointPositions: drone.route.map(({ lng, lat, alt }) => Cartesian3.fromDegrees(lng, lat, alt)),
+      material: color.withAlpha(0.7),
+      waypointLabels: drone.route.map((_, index) => ({
+        text: new ConstantProperty(`${drone.id.toUpperCase()} WP${index + 1}`),
+        ...WP_LABEL_BASE,
+      })),
+    }
+  }), [mission])
+
+  const droneColors = useMemo(() => new Map(
+    routeData.map((route) => [route.id, route.color]),
+  ), [routeData])
 
   followModeRef.current = followMode
   sceneModeRef.current = sceneMode
@@ -521,8 +422,8 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
       <div style={WEATHER_OVERLAY[weather]} />
 
       {/* 右侧控制面板 */}
-      <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 999, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 160 }}>
-        <div style={{ display: 'flex', gap: 6 }}>
+      <div className="scene-controls">
+        <div className="scene-controls__mode" style={{ display: 'flex', gap: 6 }}>
           {(['3d', '2d'] as SceneModeType[]).map((m) => (
             <button key={m} onClick={() => setSceneMode(m)} style={{
               flex: 1, padding: '8px 0', fontSize: 15, fontFamily: 'monospace',
@@ -537,16 +438,17 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
           ))}
         </div>
 
-        <div style={{ height: 1, background: '#555', margin: '2px 0' }} />
+        <div className="scene-controls__separator" style={{ height: 1, background: '#555', margin: '2px 0' }} />
 
         {/* 无人机选择 */}
-        <div style={{ fontSize: 11, color: '#888', fontFamily: 'monospace', textAlign: 'center' }}>无人机选择</div>
+        <div className="scene-controls__label" style={{ fontSize: 11, color: '#888', fontFamily: 'monospace', textAlign: 'center' }}>无人机选择</div>
         {droneIds.map((id) => {
-          const c = DRONE_COLORS[id] ?? DRONE_DEFAULT_COLOR
+          const c = droneColors.get(id) ?? DRONE_DEFAULT_COLOR
           const isActive = id === selectedId
           return (
             <button
               key={id}
+              className="scene-controls__drone"
               onClick={() => onSelectDrone(id)}
               style={{
                 padding: '6px 12px',
@@ -574,7 +476,7 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
           )
         })}
 
-        <div style={{ height: 1, background: '#555', margin: '2px 0' }} />
+        <div className="scene-controls__separator" style={{ height: 1, background: '#555', margin: '2px 0' }} />
 
         {/* 视角 */}
         {([
@@ -582,12 +484,12 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
           ['top', '🛰️ 俯瞰视角'],
           ['free', '🖱️ 自由视角'],
         ] as [FollowMode, string][]).map(([m, l]) => (
-          <button key={m} onClick={() => setFollowMode(m)} style={btnStyle(followMode === m, '0,255,255')}>
+          <button className="scene-controls__action" key={m} onClick={() => setFollowMode(m)} style={btnStyle(followMode === m, '0,255,255')}>
             {l}
           </button>
         ))}
 
-        <div style={{ height: 1, background: '#555', margin: '2px 0' }} />
+        <div className="scene-controls__separator" style={{ height: 1, background: '#555', margin: '2px 0' }} />
 
         {/* 天气 */}
         {([
@@ -595,7 +497,7 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
           ['foggy', '🌫️ 大雾'],
           ['overcast', '☁️ 阴天'],
         ] as [WeatherMode, string][]).map(([m, l]) => (
-          <button key={m} onClick={() => setWeather(m)} style={btnStyle(weather === m, '255,200,0')}>
+          <button className="scene-controls__action" key={m} onClick={() => setWeather(m)} style={btnStyle(weather === m, '255,200,0')}>
             {l}
           </button>
         ))}
@@ -630,13 +532,13 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
         ))}
 
         {/* 所有航线航点 */}
-        {routeData.map((rd, ri) =>
-          rd.points.map((_, wi) => (
+        {routeData.map((rd) =>
+          rd.route.map((_, wi) => (
             <Entity
               key={`wp-${rd.id}-${wi}`}
               position={rd.waypointPositions[wi]}
               point={WP_POINT}
-              label={routeWpLabels[ri][wi]}
+              label={rd.waypointLabels[wi]}
             />
           ))
         )}
@@ -648,6 +550,7 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
             interpolator={interpolator}
             isSelected={id === selectedId}
             onSelect={() => onSelectDrone(id)}
+            color={droneColors.get(id) ?? DRONE_DEFAULT_COLOR}
           />
         ))}
       </Viewer>

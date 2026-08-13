@@ -1,4 +1,4 @@
-module drone-api
+module github.com/lien0219/3D-Scene-Flight-Trajectory-of-UAV/api
 
 go 1.22
 
