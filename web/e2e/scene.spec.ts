@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
+import { analyzeScenePixels } from '../src/lib/scenePixels'
 
 const WEBGL_TEST_TIMEOUT = 180_000
 
@@ -26,6 +27,7 @@ test('renders live telemetry and a nonblank 3D scene without panel overlap', asy
 
   const canvas = page.locator('.cesium-widget canvas')
   await expect(canvas).toBeVisible()
+  await expectWebGLContext(canvas)
   const cesiumLogo = page.locator('.cesium-credit-logoContainer')
   await expect(cesiumLogo).toBeVisible()
   await expect(cesiumLogo.locator('img')).toHaveAttribute('src', /cesium_credit\.png$/)
@@ -72,6 +74,8 @@ test('switches to the Cesium and Three.js digital twin workspace with working co
   const threeCanvas = page.locator('.three-twin-layer canvas')
   await expect(cesiumCanvas).toBeVisible()
   await expect(threeCanvas).toBeVisible()
+  await expectWebGLContext(cesiumCanvas)
+  await expectWebGLContext(threeCanvas)
   await expect(page.getByText('CESIUM', { exact: true })).toBeAttached()
   await expect(page.getByText('THREE.JS', { exact: true })).toBeAttached()
 
@@ -102,33 +106,23 @@ test('switches to the Cesium and Three.js digital twin workspace with working co
 
 async function captureVisibleScene(page: Page, clip: Rect): Promise<Buffer> {
   const frame = await page.screenshot({ clip, animations: 'disabled' })
-  expect(sceneRegionIsVisible(frame)).toBe(true)
+  const image = PNG.sync.read(frame)
+  const analysis = analyzeScenePixels(image.data, image.width, image.height)
+  expect(analysis.visible, `scene pixel analysis: ${JSON.stringify(analysis)}`).toBe(true)
   return frame
+}
+
+async function expectWebGLContext(canvas: ReturnType<Page['locator']>): Promise<void> {
+  const contextAvailable = await canvas.evaluate((element) => {
+    const target = element as HTMLCanvasElement
+    const context = target.getContext('webgl2') ?? target.getContext('webgl')
+    return Boolean(context && !context.isContextLost())
+  })
+  expect(contextAvailable).toBe(true)
 }
 
 function rectanglesOverlap(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y
-}
-
-function sceneRegionIsVisible(buffer: Buffer): boolean {
-  const image = PNG.sync.read(buffer)
-  let visibleSamples = 0
-  let samples = 0
-  const stepX = Math.max(1, Math.floor(image.width / 20))
-  const stepY = Math.max(1, Math.floor(image.height / 20))
-
-  for (let y = 0; y < image.height; y += stepY) {
-    for (let x = 0; x < image.width; x += stepX) {
-      const offset = (image.width * y + x) * 4
-      const red = image.data[offset]
-      const green = image.data[offset + 1]
-      const blue = image.data[offset + 2]
-      if (red + green + blue > 30) visibleSamples++
-      samples++
-    }
-  }
-
-  return visibleSamples / samples > 0.5
 }
 
 function imageDifference(firstBuffer: Buffer, secondBuffer: Buffer): number {
