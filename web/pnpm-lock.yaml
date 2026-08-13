@@ -21,8 +21,8 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       resium:
-        specifier: 1.18.2
-        version: 1.18.2(cesium@1.138.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: 1.25.0
+        version: 1.25.0(cesium@1.138.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       three:
         specifier: ^0.185.1
         version: 0.185.1
@@ -1330,9 +1330,9 @@ packages:
     resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
     engines: {node: '>=0.10.0'}
 
-  resium@1.18.2:
-    resolution: {integrity: sha512-5+V+dhABBmvb2abu64qXxhF7YHoBZouIbbj6ffW1DEdrUXS3u7xWQaqyyX3xg39elA/MM9zzJgTwV1gTJmCv2A==}
-    engines: {node: '>=20.11.0'}
+  resium@1.25.0:
+    resolution: {integrity: sha512-vgj+L/PeoCLwRtcFGtFAm4TBRyg+7Z3Ls0HDEQxokayXOaE9zpK551hfeZH43NhSvFaEWzugjjkbvh/i9RQMTA==}
+    engines: {node: '>=20.19.0'}
     peerDependencies:
       cesium: 1.x
       react: '>=18.2.0'
@@ -2786,7 +2786,7 @@ snapshots:
     dependencies:
       loose-envify: 1.4.0
 
-  resium@1.18.2(cesium@1.138.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  resium@1.25.0(cesium@1.138.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       cesium: 1.138.0
       react: 18.3.1
