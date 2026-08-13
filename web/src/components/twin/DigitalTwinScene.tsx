@@ -132,7 +132,7 @@ export default function DigitalTwinScene({
     instance.imageryLayers.removeAll()
     scene.globe.enableLighting = true
     scene.globe.showGroundAtmosphere = true
-    scene.skyAtmosphere.show = true
+    if (scene.skyAtmosphere) scene.skyAtmosphere.show = true
     scene.highDynamicRange = true
     scene.requestRenderMode = false
     scene.globe.depthTestAgainstTerrain = false

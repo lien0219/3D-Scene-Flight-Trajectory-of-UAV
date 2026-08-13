@@ -351,20 +351,33 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
     if (!v) return
     const scene = v.scene
     const bl = v.imageryLayers.length > 0 ? v.imageryLayers.get(0) : null
+    const skyAtmosphere = scene.skyAtmosphere
 
     if (weather === 'clear') {
       scene.fog.enabled = false
-      scene.skyAtmosphere.hueShift = 0; scene.skyAtmosphere.saturationShift = 0; scene.skyAtmosphere.brightnessShift = 0
+      if (skyAtmosphere) {
+        skyAtmosphere.hueShift = 0
+        skyAtmosphere.saturationShift = 0
+        skyAtmosphere.brightnessShift = 0
+      }
       scene.globe.atmosphereLightIntensity = 10
       if (bl) { bl.brightness = 1; bl.contrast = 1; bl.saturation = 1 }
     } else if (weather === 'foggy') {
       scene.fog.enabled = true; scene.fog.density = 0.0008; scene.fog.minimumBrightness = 0.6
-      scene.skyAtmosphere.hueShift = -0.02; scene.skyAtmosphere.saturationShift = -0.8; scene.skyAtmosphere.brightnessShift = -0.3
+      if (skyAtmosphere) {
+        skyAtmosphere.hueShift = -0.02
+        skyAtmosphere.saturationShift = -0.8
+        skyAtmosphere.brightnessShift = -0.3
+      }
       scene.globe.atmosphereLightIntensity = 3
       if (bl) { bl.brightness = 1.3; bl.contrast = 0.7; bl.saturation = 0.3 }
     } else {
       scene.fog.enabled = true; scene.fog.density = 0.0003; scene.fog.minimumBrightness = 0.2
-      scene.skyAtmosphere.hueShift = -0.04; scene.skyAtmosphere.saturationShift = -0.6; scene.skyAtmosphere.brightnessShift = -0.25
+      if (skyAtmosphere) {
+        skyAtmosphere.hueShift = -0.04
+        skyAtmosphere.saturationShift = -0.6
+        skyAtmosphere.brightnessShift = -0.25
+      }
       scene.globe.atmosphereLightIntensity = 4
       if (bl) { bl.brightness = 0.85; bl.contrast = 0.9; bl.saturation = 0.5 }
     }
@@ -379,7 +392,7 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
 
     viewer.imageryLayers.removeAll()
     globe.enableLighting = true
-    scene.skyAtmosphere.show = true
+    if (scene.skyAtmosphere) scene.skyAtmosphere.show = true
     globe.showGroundAtmosphere = true
     scene.highDynamicRange = true
     globe.atmosphereLightIntensity = 10
