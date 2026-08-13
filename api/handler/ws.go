@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -23,6 +25,7 @@ type Hub struct {
 	mission        config.Mission
 	tickInterval   time.Duration
 	allowedOrigins map[string]struct{}
+	origins        []string
 	allowAnyOrigin bool
 	upgrader       websocket.Upgrader
 }
@@ -39,6 +42,7 @@ func NewHub(mission config.Mission, tickInterval time.Duration, allowedOrigins [
 		mission:        mission,
 		tickInterval:   tickInterval,
 		allowedOrigins: make(map[string]struct{}, len(allowedOrigins)),
+		origins:        append([]string(nil), allowedOrigins...),
 	}
 	for _, origin := range allowedOrigins {
 		if origin == "*" {
@@ -142,10 +146,51 @@ func (h *Hub) HandleConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Hub) checkOrigin(r *http.Request) bool {
-	origin := strings.TrimRight(r.Header.Get("Origin"), "/")
+	origin := r.Header.Get("Origin")
 	if origin == "" || h.allowAnyOrigin {
 		return true
 	}
-	_, allowed := h.allowedOrigins[origin]
-	return allowed
+	if _, allowed := h.allowedOrigins[strings.TrimRight(origin, "/")]; allowed {
+		return true
+	}
+	return IsOriginAllowed(origin, h.origins)
+}
+
+// IsOriginAllowed keeps production origins exact while allowing a local Vite
+// server to move to another loopback port when its preferred port is occupied.
+func IsOriginAllowed(origin string, allowedOrigins []string) bool {
+	originURL, ok := parseOrigin(origin)
+	if !ok {
+		return false
+	}
+
+	trimmedOrigin := strings.TrimRight(origin, "/")
+	for _, allowedOrigin := range allowedOrigins {
+		trimmedAllowed := strings.TrimRight(allowedOrigin, "/")
+		if trimmedAllowed == "*" || trimmedAllowed == trimmedOrigin {
+			return true
+		}
+
+		allowedURL, valid := parseOrigin(trimmedAllowed)
+		if valid && originURL.Scheme == allowedURL.Scheme && isLoopbackHost(originURL.Hostname()) && isLoopbackHost(allowedURL.Hostname()) {
+			return true
+		}
+	}
+	return false
+}
+
+func parseOrigin(value string) (*url.URL, bool) {
+	parsed, err := url.Parse(strings.TrimRight(strings.TrimSpace(value), "/"))
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" || parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return nil, false
+	}
+	return parsed, true
+}
+
+func isLoopbackHost(host string) bool {
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

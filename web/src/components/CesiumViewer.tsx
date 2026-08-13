@@ -510,6 +510,7 @@ export default function CesiumScene({ fleet, droneIds, selectedId, onSelectDrone
         homeButton={false}
         geocoder={false}
         baseLayerPicker={false}
+        baseLayer={false}
         navigationHelpButton={false}
         sceneModePicker={false}
         terrainProvider={flatTerrain}

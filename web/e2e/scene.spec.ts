@@ -9,6 +9,7 @@ interface Rect {
 }
 
 test('renders live telemetry and a nonblank 3D scene without panel overlap', async ({ page }) => {
+  test.setTimeout(90_000)
   const pageErrors: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
   await page.goto('/')
@@ -18,6 +19,7 @@ test('renders live telemetry and a nonblank 3D scene without panel overlap', asy
   await expect(hud).toContainText('深圳无人机巡航演示')
   await expect(hud).toContainText('已连接')
   await expect(hud).toContainText('uav-001')
+  await expect(hud).toContainText('在线: 3 架')
   await expect(controls).toBeVisible()
 
   const canvas = page.locator('.cesium-widget canvas')
@@ -47,9 +49,60 @@ test('renders live telemetry and a nonblank 3D scene without panel overlap', asy
   await expect.poll(async () => sceneRegionIsVisible(
     await page.screenshot({ clip: sceneClip }),
   ), { timeout: 20_000 }).toBe(true)
+
+  const chaseFrame = await page.screenshot({ clip: sceneClip })
+  await controls.getByRole('button', { name: /俯瞰视角/ }).click()
+  await expect(controls.getByRole('button', { name: /俯瞰视角/ })).toHaveCSS('font-weight', '700')
+  await page.waitForTimeout(1_500)
+  const topFrame = await page.screenshot({ clip: sceneClip })
+  expect(imageDifference(chaseFrame, topFrame)).toBeGreaterThan(8)
   expect(pageErrors).toEqual([])
 
   await page.screenshot({ path: `test-results/${test.info().project.name}-scene.png`, fullPage: true })
+})
+
+test('switches to the Cesium and Three.js digital twin workspace with working controls', async ({ page }) => {
+  test.setTimeout(90_000)
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  await page.goto('/')
+
+  await page.getByRole('button', { name: '数字孪生' }).click()
+  await expect(page).toHaveURL(/project=digital-twin/)
+  await expect(page.getByRole('heading', { name: '园区资产' })).toBeVisible()
+
+  const cesiumCanvas = page.locator('.twin-scene .cesium-widget canvas')
+  const threeCanvas = page.locator('.three-twin-layer canvas')
+  await expect(cesiumCanvas).toBeVisible()
+  await expect(threeCanvas).toBeVisible()
+  await expect(page.getByText('CESIUM', { exact: true })).toBeAttached()
+  await expect(page.getByText('THREE.JS', { exact: true })).toBeAttached()
+
+  const viewport = page.viewportSize()!
+  if (viewport.width <= 860) {
+    await page.getByRole('button', { name: '打开资产目录' }).click()
+  }
+  await page.getByRole('button', { name: /低空通信基站/ }).click()
+  await expect(page.getByText('COM-E05', { exact: true }).last()).toBeVisible()
+
+  const pauseButton = page.getByRole('button', { name: '暂停仿真' })
+  await pauseButton.click()
+  await expect(page.getByRole('button', { name: '继续仿真' })).toBeVisible()
+
+  const canvasRegion = {
+    x: Math.floor(viewport.width * 0.34),
+    y: Math.floor(viewport.height * 0.36),
+    width: Math.max(80, Math.floor(viewport.width * 0.32)),
+    height: Math.max(80, Math.floor(viewport.height * 0.28)),
+  }
+  await expect.poll(async () => sceneRegionIsVisible(
+    await page.screenshot({ clip: canvasRegion }),
+  ), { timeout: 20_000 }).toBe(true)
+  expect(pageErrors).toEqual([])
+
+  await page.reload()
+  await expect(page.getByRole('heading', { name: '园区资产' })).toBeVisible()
+  await page.screenshot({ path: `test-results/${test.info().project.name}-digital-twin.png`, fullPage: true })
 })
 
 function rectanglesOverlap(a: Rect, b: Rect): boolean {
@@ -75,4 +128,18 @@ function sceneRegionIsVisible(buffer: Buffer): boolean {
   }
 
   return visibleSamples / samples > 0.5
+}
+
+function imageDifference(firstBuffer: Buffer, secondBuffer: Buffer): number {
+  const first = PNG.sync.read(firstBuffer)
+  const second = PNG.sync.read(secondBuffer)
+  if (first.width !== second.width || first.height !== second.height) return Number.POSITIVE_INFINITY
+
+  let difference = 0
+  for (let index = 0; index < first.data.length; index += 4) {
+    difference += Math.abs(first.data[index] - second.data[index])
+    difference += Math.abs(first.data[index + 1] - second.data[index + 1])
+    difference += Math.abs(first.data[index + 2] - second.data[index + 2])
+  }
+  return difference / (first.width * first.height * 3)
 }

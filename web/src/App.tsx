@@ -1,41 +1,27 @@
-import { useState, useEffect } from 'react'
-import CesiumScene from './components/CesiumViewer'
-import HUD from './components/HUD'
-import { useDroneWS } from './hooks/useDroneWS'
-import { useMission } from './hooks/useMission'
+import { useEffect, useState } from 'react'
+import FlightWorkspace from './components/FlightWorkspace'
+import PlatformShell from './components/PlatformShell'
+import DigitalTwinWorkspace from './components/twin/DigitalTwinWorkspace'
+import { projectFromLocation, projectUrl, type ProjectId } from './lib/projectRoute'
 
 export default function App() {
-  const { fleet, droneIds, connected } = useDroneWS()
-  const { mission, error: missionError } = useMission()
-  const [selectedId, setSelectedId] = useState<string>('')
+  const [project, setProject] = useState<ProjectId>(() => projectFromLocation(window.location))
 
-  // 自动选中第一架无人机
   useEffect(() => {
-    if (!selectedId && droneIds.length > 0) {
-      setSelectedId(droneIds[0])
-    }
-  }, [droneIds, selectedId])
+    const handlePopState = () => setProject(projectFromLocation(window.location))
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
-  const selectedDrone = selectedId ? fleet[selectedId] ?? null : null
+  const selectProject = (nextProject: ProjectId) => {
+    if (nextProject === project) return
+    window.history.pushState({}, '', projectUrl(nextProject, window.location))
+    setProject(nextProject)
+  }
 
   return (
-    <>
-      <CesiumScene
-        fleet={fleet}
-        droneIds={droneIds}
-        selectedId={selectedId}
-        onSelectDrone={setSelectedId}
-        mission={mission}
-      />
-      <HUD
-        droneState={selectedDrone}
-        connected={connected}
-        droneIds={droneIds}
-        selectedId={selectedId}
-        onSelectDrone={setSelectedId}
-        missionName={mission?.name}
-        missionError={missionError}
-      />
-    </>
+    <PlatformShell activeProject={project} onSelectProject={selectProject}>
+      {project === 'flight' ? <FlightWorkspace /> : <DigitalTwinWorkspace />}
+    </PlatformShell>
   )
 }

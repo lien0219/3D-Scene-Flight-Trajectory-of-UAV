@@ -2,7 +2,7 @@
 
 ## 通用约定
 
-- 默认地址：`http://localhost:8080`
+- 默认地址：`http://127.0.0.1:8080`
 - JSON 响应：`Content-Type: application/json`
 - 时间戳：Unix 秒
 - 位置：WGS84 风格的十进制度数；默认地图提供商可能使用不同坐标体系
@@ -90,7 +90,7 @@
 浏览器示例：
 
 ```javascript
-const socket = new WebSocket('ws://localhost:8080/ws')
+const socket = new WebSocket('ws://127.0.0.1:8080/ws')
 
 socket.addEventListener('message', (event) => {
   const fleet = JSON.parse(event.data)

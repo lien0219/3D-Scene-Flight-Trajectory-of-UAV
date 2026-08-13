@@ -20,7 +20,9 @@ func Setup(hub *handler.Hub, allowedOrigins []string) http.Handler {
 	})
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: allowedOrigins,
+		AllowOriginFunc: func(origin string) bool {
+			return handler.IsOriginAllowed(origin, allowedOrigins)
+		},
 		AllowedMethods: []string{http.MethodGet, http.MethodOptions},
 		AllowedHeaders: []string{"Content-Type"},
 	})

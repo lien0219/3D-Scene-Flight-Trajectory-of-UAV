@@ -50,7 +50,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-访问 <http://localhost:5173>。Vite 会将 `/api` 和 `/ws` 代理到 `http://localhost:8080`。
+访问 <http://127.0.0.1:5173>。Vite 会将 `/api` 和 `/ws` 代理到 `http://127.0.0.1:8080`。
 
 ### Docker Compose
 

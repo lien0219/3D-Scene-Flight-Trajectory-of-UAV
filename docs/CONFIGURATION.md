@@ -11,7 +11,7 @@
 | `ALLOWED_ORIGINS` | 两个本地 Vite 地址 | CORS 与 WebSocket Origin 白名单，逗号分隔 |
 | `MISSION_FILE` | 空 | 可选任务 JSON 路径；为空时使用内置深圳任务 |
 
-生产环境应设置精确的 `ALLOWED_ORIGINS`。仅在可信封闭环境中使用 `*`。
+生产环境应设置精确的 `ALLOWED_ORIGINS`。仅在可信封闭环境中使用 `*`。当白名单包含本机回环地址时，开发服务器可使用相同协议下的其他回环端口，以兼容 Vite 自动选择空闲端口；该规则不会放宽外部域名。
 
 ## 前端环境变量
 
@@ -21,7 +21,7 @@ Vite 只会把 `VITE_` 前缀变量暴露给浏览器，因此这些值不能包
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | 空 | 跨域部署时的 API 根地址；空表示同源 |
 | `VITE_WS_URL` | 自动推导 | 显式 WebSocket URL，例如 `wss://example.com/ws` |
-| `VITE_DEV_API_TARGET` | `http://localhost:8080` | 仅供 Vite 开发代理使用 |
+| `VITE_DEV_API_TARGET` | `http://127.0.0.1:8080` | 仅供 Vite 开发代理使用；显式使用 IPv4 以避免 `localhost` 被解析到其他 IPv6 服务 |
 
 修改 Vite 环境变量后需要重新构建前端。
 
